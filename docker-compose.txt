@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres 
+    environment:
+      POSTGRES_ROOT_PASSWORD: root_pwd
+      POSTGRES_DB: zabbix
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+    ports:
+      - '5432:5432'
+    networks: 
+      - overlay
+    restart: always
+    volumes:
+      - ./src/pgsql:/var/lib/postgresql/data
+
+
+
+  zabbix-snmp:
+    image: zabbix/zabbix-snmptraps 
+    ports:
+       - '20000:162'
+    restart: always
+    volumes:
+      - ./src/zabbix:/usr/share/snmp/mibs:ro
+      - ./src/zabbix:/var/lib/zabbix/snmptraps:rw
+
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql
+    environment:
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix_pwd
+      ZBX_ENABLE_SNMP_TRAPS: "true"
+    ports:
+       - '10051:10051'
+    networks: 
+      - overlay
+    restart: always
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql
+    environment:
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: zabbix
+      POSTGRES_PASSWORD: zabbix
+      POSTGRES_DB: zabbix_pwd
+    ports:
+       - '80:8080'
+    restart: always
+    networks: 
+      - overlay
+networks:
+  overlay:
